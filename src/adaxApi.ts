@@ -37,7 +37,9 @@ export class AdaxApi {
   constructor(private clientId: string, private secret: string) {}
 
   private async authenticate(): Promise<void> {
-    if (this.token && Date.now() < this.tokenExpiry) return;
+    if (this.token && Date.now() < this.tokenExpiry) {
+      return;
+    }
 
     const res = await fetch('https://api-1.adax.no/client-api/auth/token', {
       method: 'POST',
@@ -45,7 +47,9 @@ export class AdaxApi {
       body: `grant_type=password&username=${this.clientId}&password=${this.secret}`,
     });
 
-    if (!res.ok) throw new Error(`Auth failed: ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Auth failed: ${res.statusText}`);
+    }
 
     const data: AdaxAuthResponse = await res.json();
     this.token = data.access_token;
@@ -57,7 +61,11 @@ export class AdaxApi {
     const res = await fetch(`https://api-1.adax.no/client-api/rest/v1/${endpoint}`, {
       headers: { Authorization: `Bearer ${this.token}` },
     });
-    if (!res.ok) throw new Error(`ADAX API error: ${res.statusText}`);
+
+    if (!res.ok) {
+      throw new Error(`ADAX API error: ${res.statusText}`);
+    }
+
     return res.json() as Promise<T>;
   }
 
@@ -71,6 +79,7 @@ export class AdaxApi {
 
   async setRoomTemperature(roomId: number, temperature: number): Promise<void> {
     await this.authenticate();
+
     const res = await fetch('https://api-1.adax.no/client-api/rest/v1/control/', {
       method: 'POST',
       headers: {
@@ -81,6 +90,9 @@ export class AdaxApi {
         rooms: [{ id: roomId, targetTemperature: temperature }],
       }),
     });
-    if (!res.ok) throw new Error(`Failed to set temperature: ${res.statusText}`);
+
+    if (!res.ok) {
+      throw new Error(`Failed to set temperature: ${res.statusText}`);
+    }
   }
 }

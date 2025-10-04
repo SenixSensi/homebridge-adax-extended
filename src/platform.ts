@@ -10,15 +10,15 @@ import type {
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { ADAXPlatformAccessory } from './platformAccessory';
 import { AdaxApi } from './adaxApi';
+import type { AdaxContentResponse } from './adaxApi';
 import { AdaxApiDummy } from './adaxApiDummy';
 
 export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service;
   public readonly Characteristic: typeof Characteristic;
   public readonly accessories: PlatformAccessory[] = [];
-
   private apiClient: AdaxApi | AdaxApiDummy;
-  private cache: any = null;
+  private cache: AdaxContentResponse | null = null;
   private lastUpdate = 0;
 
   constructor(
@@ -38,7 +38,7 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
       this.config.secret = this.config.secret || '';
     }
 
-    (global as any).ADAX_CONFIG = this.config;
+    (globalThis as { ADAX_CONFIG?: PlatformConfig }).ADAX_CONFIG = this.config;
 
     if (this.config.dummyMode) {
       this.apiClient = new AdaxApiDummy();
@@ -54,7 +54,7 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
     });
   }
 
-  async pollRooms(): Promise<any> {
+  async pollRooms(): Promise<AdaxContentResponse | null> {
     const now = Date.now();
     const pollInterval = (this.config.maxPollInterval || 60) * 1000;
 
@@ -62,16 +62,18 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
       try {
         this.cache = await this.apiClient.getRoomsWithEnergy();
         this.lastUpdate = now;
-      } catch (err) {
-        this.log.error('❌ Failed to poll rooms:', err);
+      } catch (error) {
+        this.log.error('❌ Failed to poll rooms:', error);
       }
     }
+
     return this.cache;
   }
 
   async discoverDevices(): Promise<void> {
     const data = await this.pollRooms();
-    if (!data?.rooms) {
+
+    if (!data || !data.rooms) {
       this.log.warn('⚠️ No rooms discovered (dummy or API returned nothing).');
       return;
     }
@@ -93,5 +95,9 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
 
   configureAccessory(accessory: PlatformAccessory): void {
     this.accessories.push(accessory);
+  }
+
+  public get client(): AdaxApi | AdaxApiDummy {
+    return this.apiClient;
   }
 }

@@ -1,5 +1,6 @@
 import type { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import type { ADAXHomebridgePlatform } from './platform';
+import type { AdaxRoom, AdaxContentResponse } from './adaxApi';
 
 export class ADAXPlatformAccessory {
   private service: Service;
@@ -9,25 +10,20 @@ export class ADAXPlatformAccessory {
     private readonly accessory: PlatformAccessory,
     private readonly roomId: number,
   ) {
-    // Grundlæggende accessory info
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'ADAX')
       .setCharacteristic(this.platform.Characteristic.Model, 'WiFi Heater Dummy')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, this.roomId.toString());
 
-    // Tilføj Thermostat-service
     this.service =
       this.accessory.getService(this.platform.Service.Thermostat) ||
       this.accessory.addService(this.platform.Service.Thermostat);
 
     this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.displayName);
-
-    // Celsius, varmetilstand og standarder
-    this.service.setCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, 0); // Celsius
+    this.service.setCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits, 0);
     this.service.setCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState, 0);
     this.service.setCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState, 1);
 
-    // Tillad temperaturer mellem 5 °C og 30 °C
     this.service.getCharacteristic(this.platform.Characteristic.TargetTemperature)
       .setProps({
         minValue: 5,
@@ -40,48 +36,43 @@ export class ADAXPlatformAccessory {
       .getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
       .onSet(this.handleTargetStateSet.bind(this));
 
-    // Initial opdatering
     this.updateValues();
   }
 
-  // Når brugeren ændrer temperatur i HomeKit
-  async handleTargetTemperatureSet(value: CharacteristicValue) {
+  async handleTargetTemperatureSet(value: CharacteristicValue): Promise<void> {
     const temperature = value as number;
     this.platform.log.info(`[ADAX] Sat temperatur i rum ${this.roomId} til ${temperature}°C`);
-
     try {
-      await this.platform['apiClient'].setRoomTemperature(this.roomId, temperature * 100);
-    } catch (err) {
-      this.platform.log.warn(`[ADAX] Kunne ikke opdatere temperatur i rum ${this.roomId}: ${err}`);
+      await this.platform.client.setRoomTemperature(this.roomId, temperature * 100);
+    } catch (error) {
+      this.platform.log.warn(`[ADAX] Kunne ikke opdatere temperatur i rum ${this.roomId}: ${error}`);
     }
   }
 
-  // Når brugeren ændrer mellem “varme / slukket”
-  async handleTargetStateSet(value: CharacteristicValue) {
+  async handleTargetStateSet(value: CharacteristicValue): Promise<void> {
     const state = value as number;
     this.platform.log.info(`[ADAX] Sat rum ${this.roomId} til tilstand: ${state === 1 ? 'Varme' : 'Slukket'}`);
   }
 
-  // Henter aktuelle temperaturer og opdaterer HomeKit
-  async updateValues() {
+  async updateValues(): Promise<void> {
     try {
-      const data = await this.platform.pollRooms();
-      const room = data.rooms.find((r: any) => r.id === this.roomId);
+      const data = (await this.platform.pollRooms()) as AdaxContentResponse | null;
+      const room = data?.rooms.find((r: AdaxRoom) => r.id === this.roomId);
+
       if (!room) {
         return;
       }
 
-      const currentTemp = room.temperature / 100;
-      const targetTemp = room.targetTemperature / 100;
+      const currentTemp = room.temperature ? room.temperature / 100 : 0;
+      const targetTemp = room.targetTemperature ? room.targetTemperature / 100 : 0;
 
       this.service.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, currentTemp);
       this.service.updateCharacteristic(this.platform.Characteristic.TargetTemperature, targetTemp);
 
-      // Bestem om varmen er aktiv
-      const heatingState = targetTemp > currentTemp ? 1 : 0; // 1=Heat, 0=Off
+      const heatingState = targetTemp > currentTemp ? 1 : 0;
       this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState, heatingState);
-    } catch (err) {
-      this.platform.log.error(`[ADAX] Fejl under opdatering af rum ${this.roomId}: ${err}`);
+    } catch (error) {
+      this.platform.log.error(`[ADAX] Fejl under opdatering af rum ${this.roomId}: ${error}`);
     }
   }
 }
