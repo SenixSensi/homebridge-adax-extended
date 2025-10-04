@@ -29,7 +29,6 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
     this.Service = this.api.hap.Service;
     this.Characteristic = this.api.hap.Characteristic;
 
-    // 🧠 Automatisk udfyldning af credentials baseret på dummyMode
     if (this.config.dummyMode) {
       this.config.clientId = 'dummy';
       this.config.secret = 'dummy';
@@ -39,10 +38,8 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
       this.config.secret = this.config.secret || '';
     }
 
-    // 🌍 Gør config tilgængelig globalt (så AdaxApiDummy kan bruge custom room names)
     (global as any).ADAX_CONFIG = this.config;
 
-    // 🧩 Dummy eller Live mode
     if (this.config.dummyMode) {
       this.apiClient = new AdaxApiDummy();
       this.log.warn('⚙️ ADAX plugin is running in DUMMY MODE – no real heaters will be contacted.');
@@ -51,14 +48,12 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
       this.log.info('🌐 ADAX plugin is running in LIVE mode – connecting to Adax Cloud API.');
     }
 
-    // 🚀 Start når Homebridge er klar
     this.api.on('didFinishLaunching', async () => {
       this.log.info('✅ ADAX plugin finished launching');
       await this.discoverDevices();
     });
   }
 
-  // 🔁 Henter og cacher rumdata
   async pollRooms(): Promise<any> {
     const now = Date.now();
     const pollInterval = (this.config.maxPollInterval || 60) * 1000;
@@ -74,7 +69,6 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
     return this.cache;
   }
 
-  // 🏠 Finder rum og registrerer dem i HomeKit
   async discoverDevices(): Promise<void> {
     const data = await this.pollRooms();
     if (!data?.rooms) {
@@ -97,7 +91,6 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
     }
   }
 
-  // 🔌 Genskaber accessories fra cache
   configureAccessory(accessory: PlatformAccessory): void {
     this.accessories.push(accessory);
   }
