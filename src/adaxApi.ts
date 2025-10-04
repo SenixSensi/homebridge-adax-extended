@@ -1,16 +1,43 @@
 import fetch from 'node-fetch';
 
+interface AdaxAuthResponse {
+  access_token: string;
+  expires_in: number;
+  refresh_token?: string;
+}
+
+export interface AdaxRoom {
+  id: number;
+  name: string;
+  temperature?: number;
+  targetTemperature?: number;
+  energyUsage?: number;
+}
+
+export interface AdaxContentResponse {
+  rooms: AdaxRoom[];
+  devices?: {
+    id: number;
+    name: string;
+    energyWh: number;
+    energyTime: number;
+  }[];
+}
+
+export interface AdaxEnergyLogPoint {
+  fromTime: number;
+  toTime: number;
+  energyWh: number;
+}
+
 export class AdaxApi {
   private token: string | null = null;
   private tokenExpiry = 0;
 
   constructor(private clientId: string, private secret: string) {}
 
-  // Håndterer login og token refresh
   private async authenticate(): Promise<void> {
-    if (this.token && Date.now() < this.tokenExpiry) {
-      return;
-    }
+    if (this.token && Date.now() < this.tokenExpiry) return;
 
     const res = await fetch('https://api-1.adax.no/client-api/auth/token', {
       method: 'POST',
@@ -18,41 +45,33 @@ export class AdaxApi {
       body: `grant_type=password&username=${this.clientId}&password=${this.secret}`,
     });
 
-    if (!res.ok) {
-      throw new Error(`Auth failed: ${res.statusText}`);
-    }
-    const data: any = await res.json(); // 👈 rettet fra "unknown" til "any"
+    if (!res.ok) throw new Error(`Auth failed: ${res.statusText}`);
 
+    const data: AdaxAuthResponse = await res.json();
     this.token = data.access_token;
     this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
   }
 
-  // Generisk request-metode
-  private async request(endpoint: string): Promise<any> {
+  private async request<T>(endpoint: string): Promise<T> {
     await this.authenticate();
     const res = await fetch(`https://api-1.adax.no/client-api/rest/v1/${endpoint}`, {
       headers: { Authorization: `Bearer ${this.token}` },
     });
-    if (!res.ok) {
-      throw new Error(`ADAX API error: ${res.statusText}`);
-    }
-    return res.json();
+    if (!res.ok) throw new Error(`ADAX API error: ${res.statusText}`);
+    return res.json() as Promise<T>;
   }
 
-  // Henter rum + energidata
-  async getRoomsWithEnergy(): Promise<any> {
-    return this.request('content/?withEnergy=1');
+  async getRoomsWithEnergy(): Promise<AdaxContentResponse> {
+    return this.request<AdaxContentResponse>('content/?withEnergy=1');
   }
 
-  // Henter energilog for specifikt rum
-  async getRoomEnergyLog(roomId: number): Promise<any> {
-    return this.request(`energy_log/${roomId}`);
+  async getRoomEnergyLog(roomId: number): Promise<AdaxEnergyLogPoint[]> {
+    return this.request<AdaxEnergyLogPoint[]>(`energy_log/${roomId}`);
   }
 
-  // Sætter temperatur på et rum
   async setRoomTemperature(roomId: number, temperature: number): Promise<void> {
     await this.authenticate();
-    await fetch('https://api-1.adax.no/client-api/rest/v1/control/', {
+    const res = await fetch('https://api-1.adax.no/client-api/rest/v1/control/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -62,5 +81,6 @@ export class AdaxApi {
         rooms: [{ id: roomId, targetTemperature: temperature }],
       }),
     });
+    if (!res.ok) throw new Error(`Failed to set temperature: ${res.statusText}`);
   }
 }
