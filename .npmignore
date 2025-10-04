@@ -1,0 +1,63 @@
+# Ignore source code
+src/
+tsconfig.json
+
+# GitHub actions
+.github/
+
+# eslint
+.eslintrc
+
+# VSCode
+.vscode/
+
+# nodemon
+nodemon.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Test coverage and build caches
+coverage/
+*.lcov
+.nyc_output
+.rpt2_cache/
+.rts2_cache_*/
+
+# Dependency directories
+node_modules/
+bower_components/
+jspm_packages/
+web_modules/
+
+# Misc build and cache files
+*.tsbuildinfo
+*.tgz
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+.pnp.*
+
+# Temporary and local files
+*.pid
+*.seed
+*.pid.lock
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+.env
+.env.test
+
+# ✅ DO NOT IGNORE dist/ (required for runtime!)
+# dist/

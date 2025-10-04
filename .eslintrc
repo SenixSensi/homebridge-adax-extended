@@ -1,0 +1,50 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "ignorePatterns": [
+    "dist",
+    "node_modules"
+  ],
+  "env": {
+    "node": true
+  },
+  "rules": {
+    "quotes": ["warn", "single"],
+    "indent": ["warn", 2, { "SwitchCase": 1 }],
+    "semi": ["off"],
+    "comma-dangle": ["warn", "always-multiline"],
+    "curly": ["warn", "all"],
+    "brace-style": ["warn"],
+    "eqeqeq": "warn",
+    "dot-notation": "off",
+    "prefer-arrow-callback": ["warn"],
+    "max-len": ["warn", 140],
+    "no-multi-spaces": ["warn", { "ignoreEOLComments": true }],
+    "lines-between-class-members": ["warn", "always", { "exceptAfterSingleLine": true }],
+
+    "no-console": "off", // Homebridge logges med this.log, men tillad console i dev
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+
+    "@typescript-eslint/no-inferrable-types": "off",         // tillad fx "let x: number = 0"
+    "@typescript-eslint/no-explicit-any": "warn",            // kun advar, ikke fejl
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-empty-function": "warn",
+    "@typescript-eslint/member-delimiter-style": ["warn"],
+    "@typescript-eslint/semi": ["warn"],
+    "@typescript-eslint/consistent-type-imports": "warn",
+
+    "comma-spacing": ["error"],
+    "no-unexpected-multiline": "error"
+  }
+}

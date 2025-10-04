@@ -1,0 +1,62 @@
+{
+  "pluginAlias": "ADAX",
+  "pluginType": "platform",
+  "singular": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "required": true,
+        "default": "ADAX"
+      },
+      "clientId": {
+        "title": "Account/client ID",
+        "type": "string",
+        "required": true,
+        "default": ""
+      },
+      "secret": {
+        "title": "Secret",
+        "type": "string",
+        "required": true,
+        "default": ""
+      },
+      "maxPollInterval": {
+        "title": "Max polling interval in seconds",
+        "type": "number",
+        "required": false,
+        "default": 60
+      },
+      "dummyMode": {
+        "title": "Enable Dummy/Test Mode",
+        "type": "boolean",
+        "required": false,
+        "default": false,
+        "description": "Use fake data for testing without real Adax heaters. When enabled, the plugin runs in simulation mode and does not contact the Adax Cloud API."
+      },
+      "roomNames": {
+        "title": "Custom Room Names",
+        "type": "object",
+        "required": false,
+        "description": "Optional custom names for your Adax rooms (only used in Dummy Mode).",
+        "properties": {
+          "1": {
+            "type": "string",
+            "title": "Room 1",
+            "default": "Stue"
+          },
+          "2": {
+            "type": "string",
+            "title": "Room 2",
+            "default": "Soveværelse"
+          }
+        },
+        "condition": {
+          "functionBody": "return model.dummyMode === true;"
+        }
+      }
+    }
+  }
+}
