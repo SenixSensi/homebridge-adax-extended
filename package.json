@@ -1,16 +1,21 @@
 {
   "displayName": "Adax (with Dummy Mode)",
   "name": "homebridge-adax-extended",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Extended Homebridge plugin for ADAX heaters with Dummy/Test mode.",
   "license": "Apache-2.0",
+  "type": "commonjs",
   "author": "senixsensi",
+  "homepage": "https://github.com/senixsensi/homebridge-adax-extended#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/senixsensi/homebridge-adax-extended.git"
   },
   "bugs": {
     "url": "https://github.com/senixsensi/homebridge-adax-extended/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=14.18.0",
@@ -31,7 +36,6 @@
     "senixsensi"
   ],
   "dependencies": {
-    "moment": "^2.29.1",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
@@ -40,7 +44,7 @@
     "@typescript-eslint/parser": "^5.3.1",
     "eslint": "^8.4.1",
     "homebridge": "^1.9.0",
-    "nodemon": "^2.0.15",
+    "nodemon": "^3.1.10",
     "rimraf": "^5.0.0",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.5"

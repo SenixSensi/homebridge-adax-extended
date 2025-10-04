@@ -51,7 +51,7 @@ export class AdaxApi {
       throw new Error(`Auth failed: ${res.statusText}`);
     }
 
-    const data: AdaxAuthResponse = await res.json();
+    const data = (await res.json()) as AdaxAuthResponse;
     this.token = data.access_token;
     this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
   }
@@ -66,7 +66,7 @@ export class AdaxApi {
       throw new Error(`ADAX API error: ${res.statusText}`);
     }
 
-    return res.json() as Promise<T>;
+    return (await res.json()) as T;
   }
 
   async getRoomsWithEnergy(): Promise<AdaxContentResponse> {
