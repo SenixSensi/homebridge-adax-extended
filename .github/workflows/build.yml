@@ -1,6 +1,10 @@
 name: Build and Lint
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
   build:
@@ -8,23 +12,28 @@ jobs:
 
     strategy:
       matrix:
-        # the Node.js versions to build on
-        node-version: [12.x, 14.x, 16.x, 18.x]
+        # Vi tester kun på moderne Node.js-versioner, da Homebridge kræver >=14
+        node-version: [14.x, 16.x, 18.x, 20.x]
 
     steps:
-      - uses: actions/checkout@v2
+      # Tjek kildekoden ud fra repoet
+      - uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }} 
-        uses: actions/setup-node@v1
+      # Sæt Node.js version fra matrix
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
+      # Installer dependencies
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
+      # Lint projektet
       - name: Lint the project
         run: npm run lint
 
+      # Build projektet
       - name: Build the project
         run: npm run build
         env:
