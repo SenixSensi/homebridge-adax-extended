@@ -1,7 +1,7 @@
 {
   "displayName": "Adax Extended (with dummy mode)",
   "name": "homebridge-adax-extended",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Extended Homebridge plugin for ADAX heaters with Dummy/Test mode.",
   "license": "Apache-2.0",
   "type": "commonjs",
