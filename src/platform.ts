@@ -32,7 +32,7 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
     if (this.config.dummyMode) {
       this.config.clientId = 'dummy';
       this.config.secret = 'dummy';
-      this.log.info('🔧 Dummy mode aktiv: bruger automatisk credentials "dummy" / "dummy"');
+      this.log.info('Dummy mode active: using credentials "dummy" / "dummy"');
     } else {
       this.config.clientId = this.config.clientId || '';
       this.config.secret = this.config.secret || '';
@@ -42,14 +42,14 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
 
     if (this.config.dummyMode) {
       this.apiClient = new AdaxApiDummy();
-      this.log.warn('⚙️ ADAX plugin is running in DUMMY MODE – no real heaters will be contacted.');
+      this.log.warn('ADAX plugin running in DUMMY MODE – no real heaters will be contacted.');
     } else {
       this.apiClient = new AdaxApi(this.config.clientId, this.config.secret);
-      this.log.info('🌐 ADAX plugin is running in LIVE mode – connecting to Adax Cloud API.');
+      this.log.info('ADAX plugin running in LIVE mode – connecting to Adax Cloud API.');
     }
 
     this.api.on('didFinishLaunching', async () => {
-      this.log.info('✅ ADAX plugin finished launching');
+      this.log.info('ADAX plugin finished launching');
       await this.discoverDevices();
     });
   }
@@ -63,7 +63,7 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
         this.cache = await this.apiClient.getRoomsWithEnergy();
         this.lastUpdate = now;
       } catch (error) {
-        this.log.error('❌ Failed to poll rooms:', error);
+        this.log.error('Failed to poll rooms:', error);
       }
     }
 
@@ -74,22 +74,36 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
     const data = await this.pollRooms();
 
     if (!data || !data.rooms) {
-      this.log.warn('⚠️ No rooms discovered (dummy or API returned nothing).');
+      this.log.warn('No rooms discovered (dummy or API returned nothing).');
       return;
     }
 
+    const discoveredRoomIds = data.rooms.map(r => r.id.toString());
+
+    // Add or update accessories
     for (const room of data.rooms) {
       const uuid = this.api.hap.uuid.generate(room.id.toString());
       let accessory = this.accessories.find(a => a.UUID === uuid);
 
       if (!accessory) {
         accessory = new this.api.platformAccessory(room.name || `Room ${room.id}`, uuid);
+        accessory.context.roomId = room.id;
         new ADAXPlatformAccessory(this, accessory, room.id);
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-        this.log.info(`➕ Added new room: ${room.name || room.id}`);
+        this.log.info(`Added new room: ${room.name || room.id}`);
       } else {
-        this.log.debug(`♻️ Room already exists: ${room.name || room.id}`);
+        this.log.debug(`Room already exists: ${room.name || room.id}`);
       }
+    }
+
+    // Remove old accessories that are not in current data
+    const accessoriesToRemove = this.accessories.filter(
+      acc => !discoveredRoomIds.includes(acc.context.roomId?.toString()),
+    );
+
+    for (const acc of accessoriesToRemove) {
+      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [acc]);
+      this.log.info(`Removed outdated accessory: ${acc.displayName}`);
     }
   }
 
