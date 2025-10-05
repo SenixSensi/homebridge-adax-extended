@@ -12,28 +12,26 @@ jobs:
 
     strategy:
       matrix:
-        # Vi tester kun på moderne Node.js-versioner, da Homebridge kræver >=14
         node-version: [14.x, 16.x, 18.x, 20.x]
 
     steps:
-      # Tjek kildekoden ud fra repoet
       - uses: actions/checkout@v4
 
-      # Sæt Node.js version fra matrix
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
-      # Installer dependencies
+      # 🔧 Opgradér npm, så npm ci kan køre med moderne lockfiles
+      - name: Upgrade npm for lockfile compatibility
+        run: npm i -g npm@9
+
       - name: Install dependencies
         run: npm ci
 
-      # Lint projektet
       - name: Lint the project
         run: npm run lint
 
-      # Build projektet
       - name: Build the project
         run: npm run build
         env:
