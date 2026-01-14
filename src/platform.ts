@@ -20,6 +20,9 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
   private apiClient: AdaxApi | AdaxApiDummy;
   private cache: AdaxContentResponse | null = null;
   private lastUpdate = 0;
+  // Track locally-set temperatures to avoid API cache issues (~60s delay)
+  private pendingTemperatures: Map<number, { value: number; timestamp: number }> = new Map();
+  private readonly PENDING_TTL = 90000; // 90 seconds to account for API cache
 
   constructor(
     public readonly log: Logger,
@@ -67,7 +70,38 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
       }
     }
 
+    // Merge pending temperatures into cache to avoid showing stale API values
+    if (this.cache) {
+      return this.mergeWithPendingTemperatures(this.cache);
+    }
+
     return this.cache;
+  }
+
+  private mergeWithPendingTemperatures(data: AdaxContentResponse): AdaxContentResponse {
+    const now = Date.now();
+    const result = { ...data, rooms: [...data.rooms] };
+
+    for (let i = 0; i < result.rooms.length; i++) {
+      const room = result.rooms[i];
+      const pending = this.pendingTemperatures.get(room.id);
+
+      if (pending && now - pending.timestamp < this.PENDING_TTL) {
+        // Use the locally-set temperature instead of stale API value
+        result.rooms[i] = { ...room, targetTemperature: pending.value };
+        this.log.debug(`Bruger afventende temperatur for rum ${room.id}: ${pending.value / 100}°C`);
+      } else if (pending) {
+        // Pending value has expired, remove it
+        this.pendingTemperatures.delete(room.id);
+      }
+    }
+
+    return result;
+  }
+
+  public setPendingTemperature(roomId: number, temperature: number): void {
+    this.pendingTemperatures.set(roomId, { value: temperature, timestamp: Date.now() });
+    this.log.debug(`Registreret afventende temperatur for rum ${roomId}: ${temperature / 100}°C`);
   }
 
   async discoverDevices(): Promise<void> {
@@ -90,9 +124,11 @@ export class ADAXHomebridgePlatform implements DynamicPlatformPlugin {
         accessory.context.roomId = room.id;
         new ADAXPlatformAccessory(this, accessory, room.id);
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-        this.log.info(`Added new room: ${room.name || room.id}`);
+        this.log.info(`Tilføjet nyt rum: ${room.name || room.id}`);
       } else {
-        this.log.debug(`Room already exists: ${room.name || room.id}`);
+        // Restore handlers for cached accessory
+        new ADAXPlatformAccessory(this, accessory, room.id);
+        this.log.info(`Gendannet rum fra cache: ${room.name || room.id}`);
       }
     }
 
